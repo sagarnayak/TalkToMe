@@ -7,6 +7,6 @@ import retrofit2.http.GET
 
 interface ApiInterface {
 
-    @GET("/")
+    @GET("interview/dictionary-v2.json")
     fun getDictionary(): Observable<Response<ResponseBody>>
 }

@@ -22,8 +22,9 @@ class ProgressUtil(private val context: Context) {
     }
 
     fun hide() {
-        @Suppress("SENSELESS_COMPARISON")
-        if (dialog != null && dialog.isShowing)
-            dialog.dismiss()
+        if (::dialog.isInitialized) {
+            if (dialog.isShowing)
+                dialog.dismiss()
+        }
     }
 }

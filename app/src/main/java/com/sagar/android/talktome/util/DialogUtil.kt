@@ -32,7 +32,7 @@ class DialogUtil(private var context: Context) {
         buttonText: String = "Ok",
         callBack: CallBack? = null
     ) {
-        if (customDialog != null && customDialog.isShowing)
+        if (::customDialog.isInitialized && customDialog.isShowing)
             customDialog.dismiss()
         customDialog = Dialog(context)
         customDialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -68,7 +68,7 @@ class DialogUtil(private var context: Context) {
         buttonTwoText: String = "Cancel",
         multiButtonCallBack: MultiButtonCallBack? = null
     ) {
-        if (customDialog != null && customDialog.isShowing)
+        if (::customDialog.isInitialized && customDialog.isShowing)
             customDialog.dismiss()
         customDialog = Dialog(context)
         customDialog.requestWindowFeature(Window.FEATURE_NO_TITLE)

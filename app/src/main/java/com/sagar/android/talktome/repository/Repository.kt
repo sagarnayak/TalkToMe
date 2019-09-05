@@ -52,14 +52,14 @@ class Repository(
                                     wordsInDictionary.postValue(
                                         Event(data)
                                     )
-                                }.run {
+                                } ?: run {
                                     t.errorBody()?.let {
                                         error.postValue(
                                             Event(
                                                 getErrorMessage(it)
                                             )
                                         )
-                                    }.run {
+                                    } ?: run {
                                         error.postValue(
                                             Event(
                                                 KeywordAndConstant.GENERIC_ERROR

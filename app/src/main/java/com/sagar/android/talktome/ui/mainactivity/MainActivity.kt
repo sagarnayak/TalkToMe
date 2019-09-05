@@ -5,7 +5,6 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import com.sagar.android.logutilmaster.LogUtil
 import com.sagar.android.talktome.R
-import com.sagar.android.talktome.core.KeywordAndConstant
 import com.sagar.android.talktome.databinding.ActivityMainBinding
 import com.sagar.android.talktome.model.Word
 import com.sagar.android.talktome.util.Event
@@ -49,8 +48,11 @@ class MainActivity : SuperActivity(), KodeinAware {
             this,
             Observer<Event<ArrayList<Word>>> { t ->
                 t?.let {
-                    if (it.shouldReadContent())
-                        gotNewWords(it.getContent() ?: ArrayList())
+                    if (it.shouldReadContent()) {
+                        it.getContent()?.let { words ->
+                            gotNewWords(words)
+                        }
+                    }
                 }
             }
         )
@@ -59,8 +61,9 @@ class MainActivity : SuperActivity(), KodeinAware {
             this,
             Observer<Event<String>> { t ->
                 t?.let {
-                    if (it.shouldReadContent())
-                        gotError(it.getContent() ?: KeywordAndConstant.GENERIC_ERROR)
+                    if (it.shouldReadContent()) {
+                        it.getContent()?.let { error -> gotError(error) }
+                    }
                 }
             }
         )
