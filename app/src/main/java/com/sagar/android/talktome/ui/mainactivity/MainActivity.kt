@@ -1,7 +1,11 @@
 package com.sagar.android.talktome.ui.mainactivity
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.speech.RecognizerIntent
+import android.view.View
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DefaultItemAnimator
@@ -52,32 +56,6 @@ class MainActivity : SuperActivity(), KodeinAware {
         setUpList()
 
         getData()
-
-        Handler().postDelayed(
-            {
-                val wordTemp = words[2]
-                words.removeAt(2)
-                words.add(1, wordTemp)
-
-                adapter.notifyItemMoved(2, 1)
-
-                showHighLightAnimationOnList(1)
-            },
-            5000
-        )
-
-        Handler().postDelayed(
-            {
-                val wordTemp = words[2]
-                words.removeAt(2)
-                words.add(1, wordTemp)
-
-                adapter.notifyItemMoved(2, 1)
-
-                showHighLightAnimationOnList(1)
-            },
-            10000
-        )
     }
 
     private fun bindToViewModel() {
@@ -170,5 +148,61 @@ class MainActivity : SuperActivity(), KodeinAware {
             },
             1000
         )
+    }
+
+    fun startSpeechRecognizer(@Suppress("UNUSED_PARAMETER") view: View) {
+        startActivityForResult(
+            Intent(
+                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+            ),
+            123
+        )
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 123 && resultCode == Activity.RESULT_OK) {
+            data?.let {
+                it.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.let { result ->
+                    recognizedSpeech(result[0])
+                }
+            }
+        }
+    }
+
+    private fun recognizedSpeech(result: String) {
+        var initialPositionOfRecognizedWord: Int = -1
+        for (word in words) {
+            if (word.word.equals(ignoreCase = true, other = result)) {
+                initialPositionOfRecognizedWord = words.indexOf(word)
+                break
+            }
+        }
+        if (initialPositionOfRecognizedWord != -1) {
+            words[initialPositionOfRecognizedWord].frequency++
+            adapter.notifyItemChanged(initialPositionOfRecognizedWord)
+            words.sortByDescending { it.frequency }
+            var newPosition = -1
+            for (word in words) {
+                if (word.word.equals(ignoreCase = true, other = result)) {
+                    newPosition = words.indexOf(word)
+                    break
+                }
+            }
+            if (!isCurrentListViewItemVisible(newPosition)) {
+                binding.contentMain.recyclerView.smoothScrollToPosition(newPosition)
+            }
+            adapter.notifyItemMoved(
+                initialPositionOfRecognizedWord,
+                newPosition
+            )
+
+            showHighLightAnimationOnList(newPosition)
+        } else {
+            showMessageInDialog(
+                "$result \n is not present in the Dictionary"
+            )
+        }
     }
 }

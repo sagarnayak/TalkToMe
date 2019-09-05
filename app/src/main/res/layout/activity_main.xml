@@ -40,6 +40,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center"
             android:layout_margin="@dimen/fab_margin"
+            android:onClick="@{context::startSpeechRecognizer}"
             app:layout_behavior=".util.ScrollAwareFABBehavior"
             app:srcCompat="@drawable/ic_microphone" />
 
