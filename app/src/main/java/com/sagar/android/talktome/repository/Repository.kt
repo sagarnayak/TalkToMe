@@ -19,6 +19,10 @@ import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Response
 
+/**
+ * this is the repository class for the application.
+ * this governs all the api call and core business logic.
+ */
 class Repository(
     private val apiInterface: ApiInterface,
     val logUtil: LogUtil,
@@ -116,6 +120,11 @@ class Repository(
         fun noMatchFound(mostPreferredPhrase: String)
     }
 
+    /**
+     * this is the method that checks has the core logic to match samples from voice recognition
+     * and the words from server.
+     * the result is sent to observer through a interface callback
+     */
     fun recognizedVoice(
         voiceSamples: ArrayList<String>,
         callback: VoiceMatchingCallback

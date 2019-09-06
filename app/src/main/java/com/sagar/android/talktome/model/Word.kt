@@ -1,5 +1,8 @@
 package com.sagar.android.talktome.model
 
+/**
+ * model class for the data from server.
+ */
 data class Word(
     val word: String,
     var frequency: Int,

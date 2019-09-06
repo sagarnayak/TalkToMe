@@ -9,6 +9,11 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+/**
+ * network module to create the retrofit api instance with the help of okhttp and other components
+ * through kodein.
+ * this is provided to required place by injection
+ */
 class NetworkModule(logUtil: LogUtil) {
 
     var apiInterface: ApiInterface

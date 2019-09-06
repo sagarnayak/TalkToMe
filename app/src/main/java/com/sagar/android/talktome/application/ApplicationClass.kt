@@ -16,6 +16,9 @@ import org.kodein.di.generic.instance
 import org.kodein.di.generic.provider
 import org.kodein.di.generic.singleton
 
+/**
+ * application class for the singletons generation by kodein.
+ */
 @Suppress("unused")
 class ApplicationClass : Application(), KodeinAware {
 
