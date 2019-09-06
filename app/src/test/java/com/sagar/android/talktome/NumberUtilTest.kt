@@ -7,28 +7,6 @@ import org.junit.Test
 class NumberUtilTest {
 
     @Test
-    fun assertDoesHaveNumberInString() {
-        Assert.assertTrue(
-            NumberUtil.doesHaveDigit("2nd")
-        )
-    }
-
-    @Test
-    fun assertDoesNotHaveNumberInString() {
-        Assert.assertFalse(
-            NumberUtil.doesHaveDigit("test")
-        )
-    }
-
-    @Test
-    fun testOrdinal() {
-        Assert.assertEquals(
-            "second",
-            NumberUtil.toOrdinal("2")
-        )
-    }
-
-    @Test
     fun assertConvertNumberToWords() {
         var found = false
         val result = NumberUtil.convertToWordRepresentation("2nd street")

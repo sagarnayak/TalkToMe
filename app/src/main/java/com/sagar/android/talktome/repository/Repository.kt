@@ -9,6 +9,7 @@ import com.sagar.android.talktome.core.KeywordAndConstant
 import com.sagar.android.talktome.model.Word
 import com.sagar.android.talktome.repository.retrofit.ApiInterface
 import com.sagar.android.talktome.util.Event
+import com.sagar.android.talktome.util.NumberUtil
 import com.sagar.android.talktome.util.StatusCode
 import com.sagar.android.talktome.util.SuperRepository
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -53,6 +54,14 @@ class Repository(
                                         jsonObjBody.getJSONArray("dictionary").toString(),
                                         listType
                                     )
+                                    for (word in data) {
+                                        word.alternateSamples = ArrayList()
+                                        word.alternateSamples.addAll(
+                                            NumberUtil.convertToWordRepresentation(word.word)
+                                        )
+
+                                        logUtil.logV("${word.word} = ${word.alternateSamples}")
+                                    }
                                     data.sortByDescending { word -> word.frequency }
                                     words.clear()
                                     words.addAll(data)
@@ -100,27 +109,31 @@ class Repository(
     public interface NumberMatchingCallback {
         fun foundExactMatch(word: Word, initialPosition: Int, finalPosition: Int)
         fun foundPartialMatch()
+        fun noMatchFound(mostPreferredPhrase: String)
     }
 
     public fun recognizedVoice(
         voiceSamples: ArrayList<String>,
         callback: NumberMatchingCallback
     ) {
-        val dataToWorkOn: ArrayList<Word> = ArrayList()
+        val wordsToWorkOn: ArrayList<Word> = ArrayList()
         if (partialMatchPhrase != "") {
             for (word in words) {
-                if (word.word.contains(partialMatchPhrase, true)) {
-                    dataToWorkOn.add(word)
+                alternateWordSampleLoop@ for (alternateSample in word.alternateSamples) {
+                    if (alternateSample.contains(partialMatchPhrase, true)) {
+                        wordsToWorkOn.add(word)
+                        break@alternateWordSampleLoop
+                    }
                 }
             }
         } else {
-            dataToWorkOn.addAll(words)
+            wordsToWorkOn.addAll(words)
         }
 
         var foundAtIndex = -1
 
         for (voiceSample in voiceSamples) {
-            for (word in dataToWorkOn) {
+            for (word in wordsToWorkOn) {
                 if (word.word.equals(voiceSample, true)) {
                     foundAtIndex = words.indexOf(word)
                     break
@@ -138,8 +151,60 @@ class Repository(
                 foundAtIndex,
                 newIndex
             )
-        }else{
+            partialMatchPhrase = ""
+        } else {
+            loopForFullMatchWithParsedSamples@ for (voiceSample in voiceSamples) {
+                val parsedVoiceSamples = NumberUtil.convertToWordRepresentation(voiceSample)
+                for (parsedVoiceSample in parsedVoiceSamples) {
+                    for (word in wordsToWorkOn) {
+                        for (parsedWord in word.alternateSamples) {
+                            if (parsedWord.equals(parsedVoiceSample, true)) {
+                                foundAtIndex = words.indexOf(word)
+                                break@loopForFullMatchWithParsedSamples
+                            }
+                        }
+                    }
+                }
+            }
 
+            if (foundAtIndex != -1) {
+                words[foundAtIndex].frequency++
+                val tempWord = words[foundAtIndex]
+                words.sortByDescending { it.frequency }
+                val newIndex = words.indexOf(tempWord)
+                callback.foundExactMatch(
+                    tempWord,
+                    foundAtIndex,
+                    newIndex
+                )
+                partialMatchPhrase = ""
+            } else if (partialMatchPhrase == "") {
+                loopForPartialMatchWithParsedSamples@ for (voiceSample in voiceSamples) {
+                    val parsedVoiceSamples = NumberUtil.convertToWordRepresentation(voiceSample)
+                    for (parsedVoiceSample in parsedVoiceSamples) {
+                        for (word in wordsToWorkOn) {
+                            for (parsedWord in word.alternateSamples) {
+                                val wordsInVoiceSample = voiceSample.split(" ")
+                                val wordsInWord = parsedWord.split(" ")
+                                for (wordInVoiceSample in wordsInVoiceSample) {
+                                    for (wordInWord in wordsInWord) {
+                                        if (wordInVoiceSample.equals(wordInWord, true)) {
+                                            partialMatchPhrase = wordInWord
+                                            callback.foundPartialMatch()
+                                            break@loopForPartialMatchWithParsedSamples
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                callback.noMatchFound(
+                    voiceSamples[0]
+                )
+                partialMatchPhrase = ""
+            }
         }
     }
 }

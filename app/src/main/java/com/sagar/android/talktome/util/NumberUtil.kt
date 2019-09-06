@@ -6,14 +6,14 @@ import kotlin.collections.ArrayList
 
 object NumberUtil {
 
-    fun doesHaveDigit(input: String): Boolean {
+    private fun doesHaveDigit(input: String): Boolean {
         return input.matches(Regex(".*\\d.*"))
     }
 
     fun convertToWordRepresentation(input: String): ArrayList<String> {
         val words = input.split(" ")
 
-        val result:ArrayList<String> = ArrayList()
+        val result: ArrayList<String> = ArrayList()
         var resultInWords = ""
         var resultOrdinal = ""
 
@@ -29,12 +29,13 @@ object NumberUtil {
                 " $wd"
         }
 
+        result.add(input.trim())
         result.add(resultInWords.trim())
         result.add(resultOrdinal.trim())
         return result
     }
 
-    fun sanitiseNumber(input: String): String {
+    private fun sanitiseNumber(input: String): String {
         var numberToOperate = input
         numberToOperate = numberToOperate.replace("th", "", ignoreCase = true)
         numberToOperate = numberToOperate.replace("st", "", ignoreCase = true)
@@ -43,11 +44,11 @@ object NumberUtil {
         return numberToOperate
     }
 
-    fun numberToWord(number: String): String {
+    private fun numberToWord(number: String): String {
         return NumberToWords.convert(number.toLong())
     }
 
-    fun toOrdinal(input: String): String {
+    private fun toOrdinal(input: String): String {
         val nf = RuleBasedNumberFormat(
             Locale.ENGLISH,
             RuleBasedNumberFormat.SPELLOUT
