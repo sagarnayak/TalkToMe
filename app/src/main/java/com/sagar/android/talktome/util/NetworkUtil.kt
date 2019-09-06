@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.sagar.android.talktome.util
 
 import android.content.Context

@@ -6,15 +6,14 @@ import android.os.Bundle
 import android.os.Handler
 import android.speech.RecognizerIntent
 import android.view.View
-import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.sagar.android.logutilmaster.LogUtil
 import com.sagar.android.talktome.R
 import com.sagar.android.talktome.databinding.ActivityMainBinding
 import com.sagar.android.talktome.model.Word
+import com.sagar.android.talktome.repository.Repository
 import com.sagar.android.talktome.ui.mainactivity.adapter.WordsListAdapter
 import com.sagar.android.talktome.util.Event
 import com.sagar.android.talktome.util.SuperActivity
@@ -29,11 +28,13 @@ class MainActivity : SuperActivity(), KodeinAware {
     override val kodein: Kodein by kodein()
 
     private val viewModelProvider: ViewModelProvider by instance()
-    private val logUtil: LogUtil by instance()
     private lateinit var viewModel: ViewModel
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: WordsListAdapter
-    private lateinit var words: ArrayList<Word>
+
+    companion object {
+        const val REQUEST_VOICE_RECOGNITION = 123
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,8 +103,7 @@ class MainActivity : SuperActivity(), KodeinAware {
         }
         binding.contentMain.recyclerView.layoutManager = layoutManager
         binding.contentMain.recyclerView.itemAnimator = DefaultItemAnimator()
-        words = ArrayList()
-        adapter = WordsListAdapter(words)
+        adapter = WordsListAdapter(ArrayList())
         binding.contentMain.recyclerView.adapter = adapter
     }
 
@@ -115,9 +115,7 @@ class MainActivity : SuperActivity(), KodeinAware {
     private fun gotNewWords(words: ArrayList<Word>) {
         hideProgress()
         binding.contentMain.swipeRefreshLayout.isRefreshing = false
-        this.words.clear()
-        this.words.addAll(words)
-        adapter.notifyDataSetChanged()
+        adapter.updateData(words)
         binding.contentMain.recyclerView.scheduleLayoutAnimation()
     }
 
@@ -151,68 +149,87 @@ class MainActivity : SuperActivity(), KodeinAware {
     }
 
     fun startSpeechRecognizer(@Suppress("UNUSED_PARAMETER") view: View) {
-        startActivityForResult(
-            Intent(
-                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
-            ),
-            123
+        startVoiceRecognitionIntent()
+    }
+
+    private fun startVoiceRecognitionIntent(promptMessage: String? = null) {
+        hideActionButton()
+        val intent = Intent(
+            RecognizerIntent.ACTION_RECOGNIZE_SPEECH
         )
+        promptMessage?.let {
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, it)
+        }
+        startActivityForResult(intent, REQUEST_VOICE_RECOGNITION)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == 123 && resultCode == Activity.RESULT_OK) {
+        if (requestCode == REQUEST_VOICE_RECOGNITION && resultCode == Activity.RESULT_OK) {
             data?.let {
                 it.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.let { result ->
-                    recognizedSpeech(result[0])
-
-                    for (
-                    word in result
-                    ) {
-                        Toast.makeText(
-                            this,
-                            word,
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    recognizedSpeech(result)
                 }
             }
+        } else {
+            showActionButton()
         }
     }
 
-    private fun recognizedSpeech(result: String) {
-        var initialPositionOfRecognizedWord: Int = -1
-        for (word in words) {
-            if (word.word.equals(ignoreCase = true, other = result)) {
-                initialPositionOfRecognizedWord = words.indexOf(word)
-                break
-            }
-        }
-        if (initialPositionOfRecognizedWord != -1) {
-            words[initialPositionOfRecognizedWord].frequency++
-            adapter.notifyItemChanged(initialPositionOfRecognizedWord)
-            words.sortByDescending { it.frequency }
-            var newPosition = -1
-            for (word in words) {
-                if (word.word.equals(ignoreCase = true, other = result)) {
-                    newPosition = words.indexOf(word)
-                    break
+    private fun recognizedSpeech(result: ArrayList<String>) {
+        showProgress()
+        viewModel.recognizedSpeech(
+            result,
+            object : Repository.VoiceMatchingCallback {
+                override fun foundExactMatch(words: ArrayList<Word>, newIndex: Int) {
+                    hideProgress()
+                    if (!isCurrentListViewItemVisible(newIndex)) {
+                        binding.contentMain.recyclerView.smoothScrollToPosition(newIndex)
+                        Handler().postDelayed(
+                            {
+                                updateWordsAndHighLight(words, newIndex)
+                            },
+                            1000
+                        )
+                    } else {
+                        updateWordsAndHighLight(words, newIndex)
+                    }
                 }
-            }
-            if (!isCurrentListViewItemVisible(newPosition)) {
-                binding.contentMain.recyclerView.smoothScrollToPosition(newPosition)
-            }
-            adapter.notifyItemMoved(
-                initialPositionOfRecognizedWord,
-                newPosition
-            )
 
-            showHighLightAnimationOnList(newPosition)
-        } else {
-            showMessageInDialog(
-                "$result \n is not present in the Dictionary"
-            )
-        }
+                override fun foundPartialMatch() {
+                    hideProgress()
+                    startVoiceRecognitionIntent("Please say that again. we do not have full match for your input")
+                }
+
+                override fun noMatchFound(mostPreferredPhrase: String) {
+                    hideProgress()
+                    showMessageInDialog(
+                        "$mostPreferredPhrase \n is not present in the Dictionary"
+                    )
+                    showActionButton()
+                }
+
+            }
+        )
+    }
+
+    private fun hideActionButton() {
+        binding.fab.hide()
+    }
+
+    private fun showActionButton() {
+        binding.fab.show()
+    }
+
+    private fun updateWordsAndHighLight(words: ArrayList<Word>, newIndex: Int) {
+        adapter.updateData(words)
+        showHighLightAnimationOnList(newIndex)
+        Handler().postDelayed(
+            {
+                showActionButton()
+            },
+            4000
+        )
     }
 }

@@ -20,19 +20,19 @@ import org.json.JSONObject
 import retrofit2.Response
 
 class Repository(
-    val apiInterface: ApiInterface,
+    private val apiInterface: ApiInterface,
     val logUtil: LogUtil,
-    val pref: SharedPreferences
+    @Suppress("unused") val pref: SharedPreferences
 ) : SuperRepository() {
 
-    public val wordsInDictionary: MutableLiveData<Event<ArrayList<Word>>> = MutableLiveData()
-    public val error: MutableLiveData<Event<String>> = MutableLiveData()
+    val wordsInDictionary: MutableLiveData<Event<ArrayList<Word>>> = MutableLiveData()
+    val error: MutableLiveData<Event<String>> = MutableLiveData()
 
-    public val words: ArrayList<Word> = ArrayList()
+    val words: ArrayList<Word> = ArrayList()
 
     private var partialMatchPhrase: String = ""
 
-    public fun getDictionary() {
+    fun getDictionary() {
         apiInterface.getDictionary()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -49,11 +49,12 @@ class Repository(
                             StatusCode.OK.code -> {
                                 t.body()?.let {
                                     val listType = object : TypeToken<ArrayList<Word>>() {}.type
-                                    val jsonObjBody: JSONObject = JSONObject(it.string())
+                                    val jsonObjBody = JSONObject(it.string())
                                     val data = Gson().fromJson<ArrayList<Word>>(
                                         jsonObjBody.getJSONArray("dictionary").toString(),
                                         listType
                                     )
+                                    logUtil.logV("generating alternate samples for words")
                                     for (word in data) {
                                         word.alternateSamples = ArrayList()
                                         word.alternateSamples.addAll(
@@ -65,8 +66,11 @@ class Repository(
                                     data.sortByDescending { word -> word.frequency }
                                     words.clear()
                                     words.addAll(data)
+
                                     wordsInDictionary.postValue(
-                                        Event(words)
+                                        Event(
+                                            getCopyOfWords()
+                                        )
                                     )
                                 } ?: run {
                                     t.errorBody()?.let {
@@ -106,16 +110,17 @@ class Repository(
             )
     }
 
-    public interface NumberMatchingCallback {
-        fun foundExactMatch(word: Word, initialPosition: Int, finalPosition: Int)
+    interface VoiceMatchingCallback {
+        fun foundExactMatch(words: ArrayList<Word>, newIndex: Int)
         fun foundPartialMatch()
         fun noMatchFound(mostPreferredPhrase: String)
     }
 
-    public fun recognizedVoice(
+    fun recognizedVoice(
         voiceSamples: ArrayList<String>,
-        callback: NumberMatchingCallback
+        callback: VoiceMatchingCallback
     ) {
+        logUtil.logV("got recognized voice phrases : $voiceSamples")
         val wordsToWorkOn: ArrayList<Word> = ArrayList()
         if (partialMatchPhrase != "") {
             for (word in words) {
@@ -130,6 +135,8 @@ class Repository(
             wordsToWorkOn.addAll(words)
         }
 
+        logUtil.logV("working set of words :\n $words")
+
         var foundAtIndex = -1
 
         for (voiceSample in voiceSamples) {
@@ -142,17 +149,12 @@ class Repository(
         }
 
         if (foundAtIndex != -1) {
-            words[foundAtIndex].frequency++
-            val tempWord = words[foundAtIndex]
-            words.sortByDescending { it.frequency }
-            val newIndex = words.indexOf(tempWord)
-            callback.foundExactMatch(
-                tempWord,
-                foundAtIndex,
-                newIndex
-            )
-            partialMatchPhrase = ""
+            logUtil.logV("found exact match at $foundAtIndex")
+
+            foundExactMatch(foundAtIndex, callback)
         } else {
+            logUtil.logV("going for a full sample set exact match loop")
+
             loopForFullMatchWithParsedSamples@ for (voiceSample in voiceSamples) {
                 val parsedVoiceSamples = NumberUtil.convertToWordRepresentation(voiceSample)
                 for (parsedVoiceSample in parsedVoiceSamples) {
@@ -168,17 +170,14 @@ class Repository(
             }
 
             if (foundAtIndex != -1) {
-                words[foundAtIndex].frequency++
-                val tempWord = words[foundAtIndex]
-                words.sortByDescending { it.frequency }
-                val newIndex = words.indexOf(tempWord)
-                callback.foundExactMatch(
-                    tempWord,
-                    foundAtIndex,
-                    newIndex
-                )
-                partialMatchPhrase = ""
+                logUtil.logV("found exact match with alternate sample set at index $foundAtIndex")
+
+                foundExactMatch(foundAtIndex, callback)
             } else if (partialMatchPhrase == "") {
+                logUtil.logV("going for a partial match loop with alternate samples")
+
+                var foundPartialMatch = false
+
                 loopForPartialMatchWithParsedSamples@ for (voiceSample in voiceSamples) {
                     val parsedVoiceSamples = NumberUtil.convertToWordRepresentation(voiceSample)
                     for (parsedVoiceSample in parsedVoiceSamples) {
@@ -191,6 +190,8 @@ class Repository(
                                         if (wordInVoiceSample.equals(wordInWord, true)) {
                                             partialMatchPhrase = wordInWord
                                             callback.foundPartialMatch()
+                                            foundPartialMatch = true
+                                            logUtil.logV("found partial match with $partialMatchPhrase")
                                             break@loopForPartialMatchWithParsedSamples
                                         }
                                     }
@@ -199,12 +200,43 @@ class Repository(
                         }
                     }
                 }
+
+                if (!foundPartialMatch) {
+                    logUtil.logV("no partial match found")
+
+                    callback.noMatchFound(
+                        voiceSamples[0]
+                    )
+                    partialMatchPhrase = ""
+                }
             } else {
+                logUtil.logV("no match found")
+
                 callback.noMatchFound(
                     voiceSamples[0]
                 )
                 partialMatchPhrase = ""
             }
         }
+    }
+
+    private fun foundExactMatch(foundAtIndex: Int, callback: VoiceMatchingCallback) {
+        words[foundAtIndex].frequency++
+        val tempWord = words[foundAtIndex]
+        words.sortByDescending { it.frequency }
+        val newIndex = words.indexOf(tempWord)
+        callback.foundExactMatch(
+            getCopyOfWords(),
+            newIndex
+        )
+        partialMatchPhrase = ""
+    }
+
+    private fun getCopyOfWords(): ArrayList<Word> {
+        val listToSend: ArrayList<Word> = ArrayList()
+        for (w in words)
+            listToSend.add(w.copy())
+
+        return listToSend
     }
 }

@@ -11,7 +11,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 class ScrollAwareFABBehavior(context: Context, attrs: AttributeSet) :
     FloatingActionButton.Behavior(context, attrs) {
 
-    var posY: Float = 0f
+    private var posY: Float = 0f
 
     override fun layoutDependsOn(
         parent: CoordinatorLayout,

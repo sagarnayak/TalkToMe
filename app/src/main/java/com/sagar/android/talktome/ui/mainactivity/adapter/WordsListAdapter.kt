@@ -10,6 +10,16 @@ import com.sagar.android.talktome.model.Word
 
 class WordsListAdapter(private val words: ArrayList<Word>) :
     RecyclerView.Adapter<WordsListAdapter.ViewHolder>() {
+
+    fun updateData(newWords: ArrayList<Word>) {
+        val diffUtil = DiffUtil(words, newWords)
+        val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(diffUtil)
+
+        words.clear()
+        words.addAll(newWords)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
             WordsListItemBinding.inflate(

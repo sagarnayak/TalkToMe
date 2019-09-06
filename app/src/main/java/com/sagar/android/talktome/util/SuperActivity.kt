@@ -7,8 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 @SuppressLint("Registered")
 open class SuperActivity : AppCompatActivity() {
 
+    @Suppress("LeakingThis")
     private val dialogUtil: DialogUtil = DialogUtil(this)
 
+    @Suppress("LeakingThis")
     private val progressUtil: ProgressUtil = ProgressUtil(this)
 
     fun isConnectedToNetwork() = NetworkUtil.isConnected(this)

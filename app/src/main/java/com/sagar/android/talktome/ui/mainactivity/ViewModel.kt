@@ -28,4 +28,13 @@ class ViewModel(private val repository: Repository) : ViewModel() {
             repository.error
         ) { t -> error.postValue(t) }
     }
+
+    fun recognizedSpeech(
+        voiceSamples: ArrayList<String>,
+        voiceMatchingCallback: Repository.VoiceMatchingCallback
+    ) {
+        repository.recognizedVoice(
+            voiceSamples, voiceMatchingCallback
+        )
+    }
 }
