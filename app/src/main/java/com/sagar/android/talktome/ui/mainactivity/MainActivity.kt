@@ -116,7 +116,6 @@ class MainActivity : SuperActivity(), KodeinAware {
         hideProgress()
         binding.contentMain.swipeRefreshLayout.isRefreshing = false
         this.words.clear()
-        words.sortByDescending { it.frequency }
         this.words.addAll(words)
         adapter.notifyDataSetChanged()
         binding.contentMain.recyclerView.scheduleLayoutAnimation()

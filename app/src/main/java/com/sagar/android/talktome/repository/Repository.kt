@@ -49,6 +49,7 @@ class Repository(
                                         jsonObjBody.getJSONArray("dictionary").toString(),
                                         listType
                                     )
+                                    data.sortByDescending { word -> word.frequency }
                                     wordsInDictionary.postValue(
                                         Event(data)
                                     )
