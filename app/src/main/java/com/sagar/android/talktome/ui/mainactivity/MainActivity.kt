@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.speech.RecognizerIntent
 import android.view.View
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DefaultItemAnimator
@@ -166,6 +167,16 @@ class MainActivity : SuperActivity(), KodeinAware {
             data?.let {
                 it.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.let { result ->
                     recognizedSpeech(result[0])
+
+                    for (
+                    word in result
+                    ) {
+                        Toast.makeText(
+                            this,
+                            word,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
