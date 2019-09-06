@@ -14,4 +14,13 @@ class NumberToWordsTest {
             NumberToWords.convert(4L)
         )
     }
+
+    @Test
+    fun assert_convertTwenty() {
+        Assert.assertEquals(
+            "successfully converted 20 to twenty",
+            "twenty",
+            NumberToWords.convert(20L)
+        )
+    }
 }

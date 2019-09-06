@@ -27,6 +27,10 @@ class Repository(
     public val wordsInDictionary: MutableLiveData<Event<ArrayList<Word>>> = MutableLiveData()
     public val error: MutableLiveData<Event<String>> = MutableLiveData()
 
+    public val words: ArrayList<Word> = ArrayList()
+
+    private var partialMatchPhrase: String = ""
+
     public fun getDictionary() {
         apiInterface.getDictionary()
             .subscribeOn(Schedulers.io())
@@ -50,8 +54,10 @@ class Repository(
                                         listType
                                     )
                                     data.sortByDescending { word -> word.frequency }
+                                    words.clear()
+                                    words.addAll(data)
                                     wordsInDictionary.postValue(
-                                        Event(data)
+                                        Event(words)
                                     )
                                 } ?: run {
                                     t.errorBody()?.let {
@@ -89,5 +95,51 @@ class Repository(
 
                 }
             )
+    }
+
+    public interface NumberMatchingCallback {
+        fun foundExactMatch(word: Word, initialPosition: Int, finalPosition: Int)
+        fun foundPartialMatch()
+    }
+
+    public fun recognizedVoice(
+        voiceSamples: ArrayList<String>,
+        callback: NumberMatchingCallback
+    ) {
+        val dataToWorkOn: ArrayList<Word> = ArrayList()
+        if (partialMatchPhrase != "") {
+            for (word in words) {
+                if (word.word.contains(partialMatchPhrase, true)) {
+                    dataToWorkOn.add(word)
+                }
+            }
+        } else {
+            dataToWorkOn.addAll(words)
+        }
+
+        var foundAtIndex = -1
+
+        for (voiceSample in voiceSamples) {
+            for (word in dataToWorkOn) {
+                if (word.word.equals(voiceSample, true)) {
+                    foundAtIndex = words.indexOf(word)
+                    break
+                }
+            }
+        }
+
+        if (foundAtIndex != -1) {
+            words[foundAtIndex].frequency++
+            val tempWord = words[foundAtIndex]
+            words.sortByDescending { it.frequency }
+            val newIndex = words.indexOf(tempWord)
+            callback.foundExactMatch(
+                tempWord,
+                foundAtIndex,
+                newIndex
+            )
+        }else{
+
+        }
     }
 }
