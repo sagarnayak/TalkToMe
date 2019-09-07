@@ -8,6 +8,4 @@ object KeywordAndConstant {
     const val LOG_TAG = "talkToMeLog"
     const val SHARED_PREF_DB = "talkToMeSharedPref"
     const val GENERIC_ERROR = "Unexpected Error occurred"
-    const val WORD = "word"
-    const val FREQUENCY = "frequency"
 }
