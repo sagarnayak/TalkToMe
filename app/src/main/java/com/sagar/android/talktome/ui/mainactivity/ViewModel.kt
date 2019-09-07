@@ -37,4 +37,8 @@ class ViewModel(private val repository: Repository) : ViewModel() {
             voiceSamples, voiceMatchingCallback
         )
     }
+
+    fun reinitialiseVoiceRecognition() {
+        repository.reinitialiseVoiceRecognition()
+    }
 }

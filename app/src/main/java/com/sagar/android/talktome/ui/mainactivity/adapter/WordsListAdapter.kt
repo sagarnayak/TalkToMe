@@ -38,12 +38,22 @@ class WordsListAdapter(private val words: ArrayList<Word>) :
         holder.bind(words[position])
     }
 
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty() && payloads[0] is Word) {
+            val word = payloads[0] as Word
+            holder.setWord(word.word)
+            holder.setFrequency(word.frequency)
+        } else {
+            holder.bind(words[position])
+        }
+    }
+
     inner class ViewHolder(private val wordsListItemBinding: WordsListItemBinding) :
         RecyclerView.ViewHolder(wordsListItemBinding.root) {
 
         fun bind(word: Word) {
-            wordsListItemBinding.textViewWord.text = word.word
-            wordsListItemBinding.textViewFrequency.text = word.frequency.toString()
+            setWord(word = word.word)
+            setFrequency(word.frequency)
             wordsListItemBinding.lottieAnimation.addAnimatorListener(
                 object : Animator.AnimatorListener {
                     override fun onAnimationRepeat(p0: Animator?) {
@@ -65,6 +75,14 @@ class WordsListAdapter(private val words: ArrayList<Word>) :
 
                 }
             )
+        }
+
+        fun setWord(word: String) {
+            wordsListItemBinding.textViewWord.text = word
+        }
+
+        fun setFrequency(frequency: Int) {
+            wordsListItemBinding.textViewFrequency.text = frequency.toString()
         }
 
         fun highLight() {

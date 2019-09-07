@@ -174,6 +174,8 @@ class MainActivity : SuperActivity(), KodeinAware {
             }
         } else {
             showActionButton()
+
+            viewModel.reinitialiseVoiceRecognition()
         }
     }
 
@@ -185,7 +187,9 @@ class MainActivity : SuperActivity(), KodeinAware {
                 override fun foundExactMatch(words: ArrayList<Word>, newIndex: Int) {
                     hideProgress()
                     if (!isCurrentListViewItemVisible(newIndex)) {
-                        binding.contentMain.recyclerView.smoothScrollToPosition(newIndex)
+                        binding.contentMain.recyclerView.smoothScrollToPosition(
+                            whichPositionToScrollTo(newIndex)
+                        )
                         Handler().postDelayed(
                             {
                                 updateWordsAndHighLight(words, newIndex)
@@ -231,5 +235,28 @@ class MainActivity : SuperActivity(), KodeinAware {
             },
             4000
         )
+    }
+
+    private fun whichPositionToScrollTo(newIndex: Int): Int {
+        val center = adapter.itemCount / 2
+        var toScroll = 0
+        if (newIndex < center) {
+            toScroll = newIndex - 2
+            if (toScroll < 0) {
+                toScroll = newIndex - 1
+                if (toScroll < 0)
+                    toScroll = 0
+            }
+        } else if (newIndex > center) {
+            toScroll = newIndex + 2
+            if (toScroll > adapter.itemCount - 1) {
+                toScroll = newIndex + 1
+                if (toScroll > adapter.itemCount - 1) {
+                    toScroll = adapter.itemCount - 1
+                }
+            }
+        }
+
+        return toScroll
     }
 }

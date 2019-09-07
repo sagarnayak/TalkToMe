@@ -1,17 +1,10 @@
 package com.sagar.android.talktome.ui.mainactivity.adapter
 
-import android.util.Log
 import androidx.recyclerview.widget.DiffUtil
 import com.sagar.android.talktome.model.Word
 
 class DiffUtil(private val oldList: ArrayList<Word>, private val newList: ArrayList<Word>) :
     DiffUtil.Callback() {
-
-    init {
-        val first = oldList.size
-        val last = newList.size
-        Log.i("Dggb", "Dbdfbdsfb $first $last")
-    }
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         return oldList[oldItemPosition].word == newList[newItemPosition].word
@@ -29,5 +22,9 @@ class DiffUtil(private val oldList: ArrayList<Word>, private val newList: ArrayL
                 oldWord.word == newWord.word &&
                         oldWord.frequency == newWord.frequency
                 )
+    }
+
+    override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
+        return newList[newItemPosition]
     }
 }

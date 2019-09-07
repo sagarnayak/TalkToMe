@@ -36,6 +36,10 @@ class Repository(
 
     private var partialMatchPhrase: String = ""
 
+    fun reinitialiseVoiceRecognition() {
+        partialMatchPhrase = ""
+    }
+
     fun getDictionary() {
         apiInterface.getDictionary()
             .subscribeOn(Schedulers.io())
