@@ -47,5 +47,4 @@ class ApplicationClass : Application(), KodeinAware {
 
         bind() from provider { ViewModelProvider(instance()) }
     }
-
 }
